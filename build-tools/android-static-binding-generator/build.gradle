@@ -40,11 +40,11 @@ if (project.hasProperty("outDir")) {
 def absoluteJsCodeDir;
 def jsCodeAbsolutePath;
 if (!project.hasProperty("test")) {
-	if(!project.hasProperty("jsCodeDir")) {
-		project.ext.jsCodeDir = "";
-	}
+//	if(!project.hasProperty("jsCodeDir")) {
+//		project.ext.jsCodeDir = "";
+//	}
 	println project.jsCodeDir.equals(null)
-	if(!project.jsCodeDir.isEmpty()) {
+	if(project.jsCodeDir.exists()) {
 		absoluteJsCodeDir = project.jsCodeDir
 		jsCodeAbsolutePath = absoluteJsCodeDir.getAbsolutePath()
  	} else {

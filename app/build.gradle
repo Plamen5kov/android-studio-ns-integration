@@ -21,17 +21,9 @@
 import groovy.json.JsonSlurper
 
 import java.nio.file.Files;
-import java.nio.file.Paths;
-
-buildscript {
-    repositories {
-        jcenter()
-    }
-
-	dependencies {
-		classpath "com.android.tools.build:gradle:2.2.3"
-	}
-}
+import java.nio.file.Paths
+import java.util.jar.JarEntry
+import java.util.jar.JarFile;
 
 apply plugin: "com.android.application"
 
@@ -50,6 +42,7 @@ version of the {N} CLI install a previous version of the runtime package - 'tns 
 """)
 }
 
+project.ext.extractedDependenciesDir = "${project.buildDir}/exploded-dependencies";
 def nativescriptDependencies = new JsonSlurper().parseText(dependenciesJson.text)
 
 def packageJsonContents = [:]
@@ -161,16 +154,16 @@ android {
 	}
 
 	sourceSets.main {
-        jniLibs.srcDir "$projectDir/libs/jni"
-    }
+		jniLibs.srcDir "$projectDir/libs/jni"
+	}
 
 	signingConfigs {
-        release {
-            if (project.hasProperty("release")) {
+		release {
+			if (project.hasProperty("release")) {
 				if (project.hasProperty("ksPath") &&
-					project.hasProperty("ksPassword") &&
-					project.hasProperty("alias") &&
-					project.hasProperty("password")) {
+						project.hasProperty("ksPassword") &&
+						project.hasProperty("alias") &&
+						project.hasProperty("password")) {
 
 					storeFile file(ksPath)
 					storePassword ksPassword
@@ -178,13 +171,13 @@ android {
 					keyPassword password
 				}
 			}
-        }
-    }
-    buildTypes {
-        release {
-            signingConfig signingConfigs.release
-        }
-    }
+		}
+	}
+	buildTypes {
+		release {
+			signingConfig signingConfigs.release
+		}
+	}
 
 	applicationVariants.all { variant ->
 		renameResultApks(variant)
@@ -192,16 +185,16 @@ android {
 
 	applicationVariants.all { variant ->
 		def variantName = variant.name.capitalize()
-		def compileSourcesTaskName = "compile${variantName}Sources"
-		def compileSourcesTask = project.tasks.findByName(compileSourcesTaskName)
-
-		def generateBuildConfigTask = variant.generateBuildConfig;
-		generateBuildConfigTask.finalizedBy(collectAllJars)
-		if(!dontRunSbg) {
-			collectAllJars.finalizedBy(setProperties)
-		}
-
-		compileSourcesTask.finalizedBy(buildMetadata)
+//		def compileSourcesTaskName = "compile${variantName}Sources"
+//		def compileSourcesTask = project.tasks.findByName(compileSourcesTaskName)
+//
+//		def generateBuildConfigTask = variant.generateBuildConfig;
+//		generateBuildConfigTask.finalizedBy(collectAllJars)
+//		if(!dontRunSbg) {
+//			collectAllJars.finalizedBy(setProperties)
+//		}
+//
+//		compileSourcesTask.finalizedBy(buildMetadata)
 
 		// forces packaging of resources and assets AFTER producing metadata
 		// Reference: https://github.com/NativeScript/android-runtime/issues/785
@@ -218,11 +211,11 @@ android {
 			}
 		}
 
-		// Compile the Java sources AFTER the Java code-generation step is done
-		def compileTask = project.tasks.findByName("compile${variantName}JavaWithJavac")
-		if (compileTask) {
-			compileTask.dependsOn("asbg:generateBindings")
-		}
+//		// Compile the Java sources AFTER the Java code-generation step is done
+//		def compileTask = project.tasks.findByName("compile${variantName}JavaWithJavac")
+//		if (compileTask) {
+//			compileTask.dependsOn(":asbg:generateBindings")
+//		}
 	}
 
 	def dimensions = applyPluginsIncludeGradleConfigurations()
@@ -233,15 +226,13 @@ android {
 }
 
 repositories {
-    jcenter()
-    maven { url 'https://maven.google.com' }
 
-    // used for local *.AAR files
+	// used for local *.AAR files
 	def pluginDependencies = nativescriptDependencies.collect { "${it.directory}/platforms/android" }
 	pluginDependencies.add("libs/runtime-libs")
 
-    flatDir {
-    	dirs pluginDependencies
+	flatDir {
+		dirs pluginDependencies
 	}
 }
 
@@ -251,11 +242,11 @@ dependencies {
 		supportVer = supportVersion
 	}
 
-    compile "com.android.support:support-v4:$supportVer"
-    compile "com.android.support:appcompat-v7:$supportVer"
+	compile "com.android.support:support-v4:$supportVer"
+	compile "com.android.support:appcompat-v7:$supportVer"
 	debugCompile "com.android.support:design:$supportVer"
 
-    // take all jars within the libs dir
+	// take all jars within the libs dir
 	compile fileTree(dir: "$projectDir/libs", include: ["**/*.jar"])
 }
 
@@ -297,62 +288,62 @@ task addDependenciesFromNativeScriptPlugins {
 
 static def updateProductFlavorsContent(flavor, dimensionName, oldContent) {
 	def endIndex = oldContent.length() - 1;
-		def index = 0;
-		def newContent = "";
-		def level = -1;
-		def dimensionFound = false;
+	def index = 0;
+	def newContent = "";
+	def level = -1;
+	def dimensionFound = false;
 
-		while(index <= endIndex) {
-			if (level == 0 && (oldContent[index] == '"' || oldContent[index] == "'")) {
-				def closingQuotes = oldContent.indexOf('"', index + 1);
+	while(index <= endIndex) {
+		if (level == 0 && (oldContent[index] == '"' || oldContent[index] == "'")) {
+			def closingQuotes = oldContent.indexOf('"', index + 1);
+			if (closingQuotes == -1) {
+				closingQuotes = oldContent.indexOf("'", index + 1);
+			}
+
+			index = closingQuotes + 1;
+			newContent += "\"${flavor}\"";
+			continue;
+		}
+
+		if (oldContent[index] == "{") {
+			level++;
+		}
+
+		if (oldContent[index] == "}") {
+			level--;
+		}
+
+		if (level > 0) {
+			if (!dimensionFound && oldContent.indexOf("dimension", index) == index) {
+				newContent += "dimension \"${dimensionName}\"";
+				dimensionFound = true;
+				index += "dimension ".length();
+				def openingQuoutes = oldContent.indexOf('"', index);
+				if (openingQuoutes == -1) {
+					openingQuoutes = oldContent.indexOf("'", index);
+				}
+
+				def closingQuotes = oldContent.indexOf('"', openingQuoutes + 1);
 				if (closingQuotes == -1) {
-					closingQuotes = oldContent.indexOf("'", index + 1);
+					closingQuotes = oldContent.indexOf("'", openingQuoutes + 1);
 				}
 
 				index = closingQuotes + 1;
-				newContent += "\"${flavor}\"";
-				continue;
 			}
-
-			if (oldContent[index] == "{") {
-				level++;
-			}
-
-			if (oldContent[index] == "}") {
-				level--;
-			}
-
-			if (level > 0) {
-				if (!dimensionFound && oldContent.indexOf("dimension", index) == index) {
-					newContent += "dimension \"${dimensionName}\"";
-					dimensionFound = true;
-					index += "dimension ".length();
-					def openingQuoutes = oldContent.indexOf('"', index);
-					if (openingQuoutes == -1) {
-						openingQuoutes = oldContent.indexOf("'", index);
-					}
-
-					def closingQuotes = oldContent.indexOf('"', openingQuoutes + 1);
-					if (closingQuotes == -1) {
-						closingQuotes = oldContent.indexOf("'", openingQuoutes + 1);
-					}
-
-					index = closingQuotes + 1;
-				}
-			}
-
-			newContent += oldContent[index];
-
-			index++;
 		}
 
-		return newContent;
+		newContent += oldContent[index];
+
+		index++;
+	}
+
+	return newContent;
 }
 
 static def createProductFlavorsContent(flavor, dimensionName, includeAndroidContent = true) {
 	if (includeAndroidContent)
-  	{
-    	def content = """
+	{
+		def content = """
 android {
     productFlavors {
         "${flavor}" {
@@ -361,18 +352,18 @@ android {
     }
 }
 """
-    	return content;
+		return content;
 	}
 	else
 	{
-    	def content = """
+		def content = """
     productFlavors {
         "${flavor}" {
             dimension "${dimensionName}"
         }
     }
 """
-      return content;
+		return content;
 	}
 }
 
@@ -408,28 +399,28 @@ static def modifyProductFlavorInContent(content, dimension, flavor) {
 	}
 
 	if (indexEnd != -1)
-    {
+	{
 		// full content of productFlavors { ... } -> the substring is parenthesis to parenthesis -> { ... }
-      def oldProductFlavorsText = content.substring(indexStart, indexEnd + 1);
+		def oldProductFlavorsText = content.substring(indexStart, indexEnd + 1);
 
-      def newProductFlavorsContent = updateProductFlavorsContent(flavor, dimension, oldProductFlavorsText);
+		def newProductFlavorsContent = updateProductFlavorsContent(flavor, dimension, oldProductFlavorsText);
 
-      return content.replace(oldProductFlavorsText, newProductFlavorsContent);
-    }
-    else
-    {
-        def androidContentExists = content.indexOf("android {") != -1;
-        def newProductFlavorsContent = createProductFlavorsContent(flavor, dimension, !androidContentExists);
+		return content.replace(oldProductFlavorsText, newProductFlavorsContent);
+	}
+	else
+	{
+		def androidContentExists = content.indexOf("android {") != -1;
+		def newProductFlavorsContent = createProductFlavorsContent(flavor, dimension, !androidContentExists);
 
-        if (androidContentExists)
-        {
-           return content.replace("android {", "android { ${newProductFlavorsContent}");
-        }
-        else
-        {
-           return "${newProductFlavorsContent} \t ${content}"
-        }
-    }
+		if (androidContentExists)
+		{
+			return content.replace("android {", "android { ${newProductFlavorsContent}");
+		}
+		else
+		{
+			return "${newProductFlavorsContent} \t ${content}"
+		}
+	}
 }
 
 def copyFolder(source, destination) {
@@ -474,10 +465,68 @@ task ensureMetadataOutDir {
 ///////////////////////////// EXECUTUION PHASE /////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////
 
+tasks.whenTaskAdded({ org.gradle.api.DefaultTask currentTask ->
+	if(currentTask =~ /generate.+BuildConfig/ ) {
+		currentTask.finalizedBy(extractAllJars)
+		extractAllJars.finalizedBy(collectAllJars)
+		collectAllJars.finalizedBy(setProperties)
+	}
+	if(currentTask =~ /compile.+JavaWithJavac/ ) {
+		currentTask.dependsOn(":asbg:generateBindings")
+		currentTask.finalizedBy(buildMetadata)
+	}
+})
+
+def explodeAar (File compileDependency, String outputDir) {
+	if(compileDependency.name.endsWith(".aar")) {
+		JarFile jar = new JarFile(compileDependency)
+		Enumeration enumEntries = jar.entries()
+		while (enumEntries.hasMoreElements()) {
+			JarEntry file = (JarEntry) enumEntries.nextElement();
+			if(file.name.equals("classes.jar")) {
+				def f = new File(outputDir , file.name);
+				new File(f.parent).mkdirs();
+				InputStream is = jar.getInputStream(file); // get the input stream
+				FileOutputStream fos = new FileOutputStream(f);
+				while (is.available() > 0) {  // write contents of 'is' to 'fos'
+					fos.write(is.read())
+				}
+				fos.close()
+				is.close()
+			}
+			if (file.isDirectory()) {
+				continue
+			}
+		}
+		jar.close()
+	}
+	else if(compileDependency.name.endsWith(".jar")) {
+		copy {
+			from compileDependency.absolutePath
+			into outputDir
+		}
+	}
+}
+
+task extractAllJars {
+	doLast {
+		def iter = configurations.compile.resolvedConfiguration.resolvedArtifacts.iterator()
+		def dependencyCounter = 0;
+		while(iter.hasNext()) {
+			//declaring variable as specific class for getting code completion in Android Studio
+			org.gradle.api.internal.artifacts.DefaultResolvedArtifact nextDependency = iter.next();
+
+			def outputDir = java.nio.file.Paths.get(extractedDependenciesDir, ""+dependencyCounter).normalize().toString();
+			explodeAar(nextDependency.file, outputDir)
+			dependencyCounter++;
+		}
+	}
+}
+
 task collectAllJars {
 	description "gathers all paths to jar dependencies before building metadata with them"
 
-	def explodedAarDir = project.buildDir.getAbsolutePath() + "/intermediates/exploded-aar/"
+	def explodedAarDir = project.hasProperty("extractedDependenciesDir") ? extractedDependenciesDir : project.buildDir.getAbsolutePath() + "/intermediates/exploded-aar/"
 	def sdkPath = android.sdkDirectory.getAbsolutePath();
 	def androidJar = sdkPath + "/platforms/" + android.compileSdkVersion + "/android.jar"
 
@@ -539,7 +588,7 @@ task buildMetadata (type: JavaExec) {
 			metadataParams.add(classesDirBuildType.getAbsolutePath())
 		}
 
-		workingDir "build-tools"
+		workingDir "$rootDir/build-tools"
 		main "-jar"
 
 		logger.info("Task buildMetadata: Call metadata-generator.jar with arguments: " + metadataParams.toString().replaceAll(',', ''))
@@ -559,9 +608,9 @@ task generateTypescriptDefinitions (type: JavaExec) {
 	def includeDirs = ["com.android.support", "/platforms/" + android.compileSdkVersion]
 
 	doFirst {
-		delete "build-tools/typings"
+		delete "$rootDir/build-tools/typings"
 
-		workingDir "build-tools"
+		workingDir "$rootDir/build-tools"
 
 		main "-jar"
 
@@ -602,8 +651,8 @@ task copyTypings {
 		println "Copied generated typings to application root level. Make sure to import android.d.ts in reference.d.ts"
 
 		copy {
-			from "$projectDir/build-tools/typings"
-			into "$projectDir/../../"
+			from "$rootDir/build-tools/typings"
+			into "$rootDir/../../"
 		}
 	}
 }
@@ -622,8 +671,8 @@ task validateAppIdMatch {
 
 			if (packageJsonMap.nativescript.id != android.defaultConfig.applicationId) {
 				def errorMessage = "${lineSeparator}WARNING: The Application identifier is different from the one inside 'package.json' file.$lineSeparator" +
-					"NativeScript CLI might not work properly.$lineSeparator" +
-					"Update the application identifier in package.json and app.gradle so that they match.";
+						"NativeScript CLI might not work properly.$lineSeparator" +
+						"Update the application identifier in package.json and app.gradle so that they match.";
 				logger.error(errorMessage);
 			}
 		}
@@ -647,15 +696,18 @@ task setProperties {
 	}
 }
 
-setProperties.finalizedBy("asbg:generateBindings", generateTypescriptDefinitions)
+//setProperties.finalizedBy(":asbg:generateBindings", generateTypescriptDefinitions)
 
 ////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////// EXECUTION ORDER /////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////
 
-collectAllJars.dependsOn(ensureMetadataOutDir)
-buildMetadata.dependsOn(collectAllJars)
-generateTypescriptDefinitions.finalizedBy(copyTypings)
+//extractAllJars.dependsOn(ensureMetadataOutDir)
+//collectAllJars.dependsOn(extractAllJars)
+//buildMetadata.dependsOn(collectAllJars)
+//generateTypescriptDefinitions.finalizedBy(copyTypings)
+
+//buildMetadata.dependsOn(":asbg:generateBindings");
 
 task buildapk {
 	//done to build only necessary apk
