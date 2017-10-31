@@ -21,8 +21,8 @@
 import groovy.json.JsonSlurper
 
 import java.nio.file.Files;
-import java.nio.file.Paths
-import java.util.jar.JarEntry
+import java.nio.file.Paths;
+import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 apply plugin: "com.android.application"
@@ -96,7 +96,10 @@ def applyPluginsIncludeGradleConfigurations =  { ->
 		if (!androidDir.exists()) {
 			return
 		}
-
+		def includeGradleFile = new File(androidDir, "include.gradle")
+		if(!includeGradleFile.exists()) {
+			return;
+		}
 		def packageJsonPath = file("${dep.directory}/package.json")
 		def packageJson = new JsonSlurper().parseText(packageJsonPath.text)
 		def pluginName = packageJson.name
@@ -105,7 +108,6 @@ def applyPluginsIncludeGradleConfigurations =  { ->
 		dimensions.add(dimensionName)
 		def flavor = "F${flavorNumber++}"
 
-		def includeGradleFile = new File(androidDir, "include.gradle")
 		def destinationDir = file("${configurationsDir}/${pluginName}/")
 		def destinationIncludeGradleFile = file("${configurationsDir}/${pluginName}/include.gradle")
 
