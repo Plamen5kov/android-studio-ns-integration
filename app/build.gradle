@@ -227,11 +227,15 @@ android {
 	applyAppGradleConfiguration()
 }
 
+def localRuntimeExists = file("$projectDir/libs/runtime-libs/nativescript-regular.aar").exists()
+
 repositories {
 
 	// used for local *.AAR files
 	def pluginDependencies = nativescriptDependencies.collect { "${it.directory}/platforms/android" }
-//	pluginDependencies.add("libs/runtime-libs")
+	if(localRuntimeExists) {
+		pluginDependencies.add("libs/runtime-libs")
+	}
 
 	flatDir {
 		dirs pluginDependencies
@@ -247,9 +251,6 @@ dependencies {
 	compile "com.android.support:support-v4:$supportVer"
 	compile "com.android.support:appcompat-v7:$supportVer"
 	debugCompile "com.android.support:design:$supportVer"
-
-	// take all jars within the libs dir
-	compile project(':runtime')
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -265,7 +266,7 @@ task addNativeScriptRuntimePackageDependency {
 
 	def runtime = useV8Symbols ? "nativescript-regular" : "nativescript-optimized";
 	println "\t + adding nativescript runtime package dependency: $runtime"
-	if(file("$projectDir/libs/runtime-libs/nativescript-regular.aar").exists()) {
+	if(localRuntimeExists) {
 		project.dependencies.add("compile", [name: runtime, ext: "aar"])
 	}
 }

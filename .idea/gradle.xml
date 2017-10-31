@@ -10,8 +10,6 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
             <option value="$PROJECT_DIR$/build-tools/android-static-binding-generator" />
-            <option value="$PROJECT_DIR$/runtime" />
-            <option value="$PROJECT_DIR$/runtime-binding-generator" />
           </set>
         </option>
         <option name="resolveModulePerSourceSet" value="false" />

@@ -1,2 +1,2 @@
-include ':app', ':asbg', ':runtime', ':runtime-binding-generator'
+include ':app', ':asbg'
 project(':asbg').projectDir = new File('build-tools/android-static-binding-generator')
