@@ -5,6 +5,8 @@
       <module fileurl="file://$PROJECT_DIR$/NSTemplateDir.iml" filepath="$PROJECT_DIR$/NSTemplateDir.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/build-tools/android-static-binding-generator/asbg.iml" filepath="$PROJECT_DIR$/build-tools/android-static-binding-generator/asbg.iml" />
+      <module fileurl="file://$PROJECT_DIR$/runtime/runtime.iml" filepath="$PROJECT_DIR$/runtime/runtime.iml" />
+      <module fileurl="file://$PROJECT_DIR$/runtime-binding-generator/runtime-binding-generator.iml" filepath="$PROJECT_DIR$/runtime-binding-generator/runtime-binding-generator.iml" />
     </modules>
   </component>
 </project>
