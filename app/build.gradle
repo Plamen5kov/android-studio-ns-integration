@@ -256,18 +256,19 @@ dependencies {
 ///////////////////////////// CONFIGURATION PHASE //////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////
 
-//task addNativeScriptRuntimePackageDependency {
-//	def useV8Symbols = nativescriptDependencies.any {
-//		def packageJsonPath = file("${it.directory}/package.json");
-//		def packageJson = new JsonSlurper().parseText(packageJsonPath.text);
-//		return packageJson.nativescript.useV8Symbols;
-//	}
-//
-//	def runtime = useV8Symbols ? "nativescript-regular" : "nativescript-optimized";
-//	println "\t + adding nativescript runtime package dependency: $runtime"
-//
-//	project.dependencies.add("compile", [name: runtime, ext: "aar"])
-//}
+task addNativeScriptRuntimePackageDependency {
+	def useV8Symbols = nativescriptDependencies.any {
+		def packageJsonPath = file("${it.directory}/package.json");
+		def packageJson = new JsonSlurper().parseText(packageJsonPath.text);
+		return packageJson.nativescript.useV8Symbols;
+	}
+
+	def runtime = useV8Symbols ? "nativescript-regular" : "nativescript-optimized";
+	println "\t + adding nativescript runtime package dependency: $runtime"
+	if(file("$projectDir/libs/runtime-libs/nativescript-regular.aar").exists()) {
+		project.dependencies.add("compile", [name: runtime, ext: "aar"])
+	}
+}
 
 task addDependenciesFromNativeScriptPlugins {
 	nativescriptDependencies.each { dep ->
@@ -701,18 +702,9 @@ task setProperties {
 	}
 }
 
-//setProperties.finalizedBy(":asbg:generateBindings", generateTypescriptDefinitions)
-
 ////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////// EXECUTION ORDER /////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////
-
-//extractAllJars.dependsOn(ensureMetadataOutDir)
-//collectAllJars.dependsOn(extractAllJars)
-//buildMetadata.dependsOn(collectAllJars)
-//generateTypescriptDefinitions.finalizedBy(copyTypings)
-
-//buildMetadata.dependsOn(":asbg:generateBindings");
 
 task buildapk {
 	//done to build only necessary apk
