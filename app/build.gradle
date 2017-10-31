@@ -459,8 +459,10 @@ def copyAndRenamePluginDirToFlavorName(directory, flavor) {
 }
 
 task ensureMetadataOutDir {
-	def outputDir = file("$projectDir/metadata/output/assets/metadata")
-	outputDir.mkdirs()
+	doLast {
+		def outputDir = file("$projectDir/metadata/output/assets/metadata")
+		outputDir.mkdirs()
+	}
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -475,7 +477,8 @@ tasks.whenTaskAdded({ org.gradle.api.DefaultTask currentTask ->
 	}
 	if(currentTask =~ /compile.+JavaWithJavac/ ) {
 		currentTask.dependsOn(":asbg:generateBindings")
-		currentTask.finalizedBy(buildMetadata)
+		currentTask.finalizedBy(ensureMetadataOutDir)
+		ensureMetadataOutDir.finalizedBy(buildMetadata)
 	}
 })
 
