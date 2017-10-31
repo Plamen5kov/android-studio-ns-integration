@@ -7,3 +7,12 @@
 /build
 /captures
 .externalNativeBuild
+
+
+build-tools/android-static-binding-generator/bindings.txt
+build-tools/android-static-binding-generator/cached.txt
+build-tools/android-static-binding-generator/interfaces-names.txt
+build-tools/android-static-binding-generator/jsFilesParameters.txt
+app/src/main/java/com/tns/gen/
+app/metadata/
+app/src/main/assets/metadata/
